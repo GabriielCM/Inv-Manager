@@ -1,0 +1,319 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row mb-4 align-items-center">
+    <div class="col">
+        <h1 class="display-5">
+            <i class="bi bi-clipboard-data me-2"></i>Inventário {{ inventario.data_inventario }}
+        </h1>
+        <p class="lead">Extraído em {{ inventario.timestamp_extracao }}</p>
+    </div>
+    <div class="col-auto">
+        <a href="{{ url_for('main.index') }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left me-1"></i>Voltar
+        </a>
+        
+        <div class="dropdown d-inline-block">
+            <button class="btn btn-success dropdown-toggle" type="button" id="exportDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-download me-1"></i>Exportar
+            </button>
+            <ul class="dropdown-menu" aria-labelledby="exportDropdown">
+                <li><a class="dropdown-item" href="{{ url_for('main.export_inventario', id=inventario.id, format='excel') }}">Excel (.xlsx)</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('main.export_inventario', id=inventario.id, format='csv') }}">CSV</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('main.export_inventario', id=inventario.id, format='txt') }}">Texto (.txt)</a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-light">
+                <h5 class="card-title mb-0"><i class="bi bi-info-circle me-2"></i>Informações do Inventário</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>Arquivo:</span>
+                        <span class="badge bg-primary rounded-pill">{{ inventario.nome_arquivo }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>Data do Inventário:</span>
+                        <span class="badge bg-primary rounded-pill">{{ inventario.data_inventario }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>Data e Hora da Extração:</span>
+                        <span class="badge bg-primary rounded-pill">{{ inventario.timestamp_extracao }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>Data de Importação:</span>
+                        <span class="badge bg-primary rounded-pill">{{ inventario.data_importacao.strftime('%d/%m/%Y %H:%M:%S') }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>Última Atualização:</span>
+                        <span class="badge bg-primary rounded-pill">{{ inventario.ultima_atualizacao.strftime('%d/%m/%Y %H:%M:%S') }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>Total de Itens:</span>
+                        <span class="badge bg-primary rounded-pill">{{ itens|length }}</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-light">
+                <h5 class="card-title mb-0"><i class="bi bi-bar-chart-fill me-2"></i>Resumo</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card mb-3 border-info">
+                            <div class="card-body text-center">
+                                <h5 class="card-title">Quantidade</h5>
+                                <div class="row">
+                                    <div class="col">
+                                        <p class="mb-1 text-secondary">Estoque</p>
+                                        <h4>{{ '%0.2f'|format(totais.estoque|float) }}</h4>
+                                    </div>
+                                    <div class="col">
+                                        <p class="mb-1 text-secondary">Contagem</p>
+                                        <h4>{{ '%0.2f'|format(totais.contagem|float) }}</h4>
+                                    </div>
+                                    <div class="col">
+                                        <p class="mb-1 text-secondary">Diferença</p>
+                                        <h4 class="{{ 'text-danger' if totais.diferenca < 0 else 'text-success' if totais.diferenca > 0 else '' }}">
+                                            {{ '%0.2f'|format(totais.diferenca|float) }}
+                                        </h4>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="card mb-3 border-success">
+                            <div class="card-body text-center">
+                                <h5 class="card-title">Valor</h5>
+                                <div class="row">
+                                    <div class="col">
+                                        <p class="mb-1 text-secondary">Estoque</p>
+                                        <h4>R$ {{ '%0.2f'|format(totais.valor_estoque|float) }}</h4>
+                                    </div>
+                                    <div class="col">
+                                        <p class="mb-1 text-secondary">Contagem</p>
+                                        <h4>R$ {{ '%0.2f'|format(totais.valor_contagem|float) }}</h4>
+                                    </div>
+                                    <div class="col">
+                                        <p class="mb-1 text-secondary">Diferença</p>
+                                        <h4 class="{{ 'text-danger' if totais.valor_diferenca < 0 else 'text-success' if totais.valor_diferenca > 0 else '' }}">
+                                            R$ {{ '%0.2f'|format(totais.valor_diferenca|float) }}
+                                        </h4>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-12">
+                        <canvas id="diferenca-chart" width="400" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-light">
+        <div class="row align-items-center">
+            <div class="col">
+                <h5 class="card-title mb-0"><i class="bi bi-table me-2"></i>Itens do Inventário</h5>
+            </div>
+            <div class="col-auto">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="apenasComDiferenca" 
+                        {{ 'checked' if request.args.get('apenas_diferencas') == 'true' }}>
+                    <label class="form-check-label" for="apenasComDiferenca">Apenas itens com diferença</label>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="row mb-4">
+            <div class="col-md-5">
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input type="text" class="form-control" id="codigoFiltro" placeholder="Filtrar por código" value="{{ request.args.get('codigo', '') }}">
+                </div>
+            </div>
+            <div class="col-md-5">
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input type="text" class="form-control" id="materialFiltro" placeholder="Filtrar por material" value="{{ request.args.get('material', '') }}">
+                </div>
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-primary w-100" id="aplicarFiltro">Aplicar Filtros</button>
+            </div>
+        </div>
+        
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Código</th>
+                        <th>Material</th>
+                        <th>Un.</th>
+                        <th>Qtd. Estoque</th>
+                        <th>Qtd. Contada</th>
+                        <th>Diferença</th>
+                        <th>IV-</th>
+                        <th>IV+</th>
+                        <th>Val. Absoluto</th>
+                        <th>Preço Unit.</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in itens %}
+                    <tr class="{{ 'table-danger' if item.diferenca_quantidade < 0 else 'table-success' if item.diferenca_quantidade > 0 else '' }}">
+                        <td>{{ item.codigo }}</td>
+                        <td>{{ item.material }}</td>
+                        <td>{{ item.unidade }}</td>
+                        <td>{{ '%0.2f'|format(item.quantidade_estoque) }}</td>
+                        <td>{{ '%0.2f'|format(item.quantidade_contada) }}</td>
+                        <td>{{ '%0.2f'|format(item.diferenca_quantidade) }}</td>
+                        <td>{{ '%0.2f'|format(item.iv_negativo) }}</td>
+                        <td>{{ '%0.2f'|format(item.iv_positivo) }}</td>
+                        <td>{{ '%0.2f'|format(item.valor_absoluto_quantidade) }}</td>
+                        <td>R$ {{ '%0.2f'|format(item.preco_unitario) }}</td>
+                        <td>
+                            <a href="{{ url_for('main.edit_item', id=inventario.id, item_id=item.id) }}" class="btn btn-sm btn-warning">
+                                <i class="bi bi-pencil-square"></i>
+                            </a>
+                            <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteItemModal{{ item.id }}">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                            
+                            <!-- Modal de Confirmação de Exclusão do Item -->
+                            <div class="modal fade" id="deleteItemModal{{ item.id }}" tabindex="-1" aria-labelledby="deleteItemModalLabel{{ item.id }}" aria-hidden="true">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header bg-danger text-white">
+                                            <h5 class="modal-title" id="deleteItemModalLabel{{ item.id }}">Confirmar Exclusão</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <p>Você tem certeza que deseja excluir o item <strong>{{ item.codigo }} - {{ item.material }}</strong>?</p>
+                                            <p class="text-danger"><small>Esta ação não pode ser desfeita.</small></p>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                            <form action="{{ url_for('main.delete_item', id=inventario.id, item_id=item.id) }}" method="post">
+                                                <button type="submit" class="btn btn-danger">Confirmar Exclusão</button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot class="table-light">
+                    <tr>
+                        <th colspan="3">Totais</th>
+                        <th>{{ '%0.2f'|format(totais.estoque) }}</th>
+                        <th>{{ '%0.2f'|format(totais.contagem) }}</th>
+                        <th>{{ '%0.2f'|format(totais.diferenca) }}</th>
+                        <th>{{ '%0.2f'|format(totais.iv_negativo) }}</th>
+                        <th>{{ '%0.2f'|format(totais.iv_positivo) }}</th>
+                        <th>{{ '%0.2f'|format(totais.val_absoluto) }}</th>
+                        <th></th>
+                        <th></th>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Configurar o gráfico
+        const ctx = document.getElementById('diferenca-chart').getContext('2d');
+        const chart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Quantidade', 'Valor (R$)'],
+                datasets: [{
+                    label: 'Estoque',
+                    data: [{{ totais.estoque }}, {{ totais.valor_estoque }}],
+                    backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }, {
+                    label: 'Contagem',
+                    data: [{{ totais.contagem }}, {{ totais.valor_contagem }}],
+                    backgroundColor: 'rgba(75, 192, 192, 0.5)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 1
+                }, {
+                    label: 'Diferença',
+                    data: [{{ totais.diferenca }}, {{ totais.valor_diferenca }}],
+                    backgroundColor: '{% if totais.diferenca < 0 %}rgba(255, 99, 132, 0.5){% else %}rgba(75, 192, 192, 0.5){% endif %}',
+                    borderColor: '{% if totais.diferenca < 0 %}rgba(255, 99, 132, 1){% else %}rgba(75, 192, 192, 1){% endif %}',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+        
+        // Configurar a filtragem
+        document.getElementById('aplicarFiltro').addEventListener('click', function() {
+            aplicarFiltros();
+        });
+        
+        document.getElementById('apenasComDiferenca').addEventListener('change', function() {
+            aplicarFiltros();
+        });
+        
+        function aplicarFiltros() {
+            const codigo = document.getElementById('codigoFiltro').value;
+            const material = document.getElementById('materialFiltro').value;
+            const apenasDiferencas = document.getElementById('apenasComDiferenca').checked;
+            
+            let url = '{{ url_for("main.view_inventario", id=inventario.id) }}?';
+            
+            if (codigo) {
+                url += 'codigo=' + encodeURIComponent(codigo) + '&';
+            }
+            
+            if (material) {
+                url += 'material=' + encodeURIComponent(material) + '&';
+            }
+            
+            if (apenasDiferencas) {
+                url += 'apenas_diferencas=true';
+            }
+            
+            window.location.href = url;
+        }
+    });
+</script>
+{% endblock %} 

@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1 class="display-5">
+            <i class="bi bi-pencil-square me-2"></i>Editar Item
+        </h1>
+        <p class="lead">{{ item.codigo }} - {{ item.material }}</p>
+    </div>
+    <div class="col-auto align-self-center">
+        <a href="{{ url_for('main.view_inventario', id=inventario.id) }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left me-1"></i>Voltar
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card shadow-sm">
+            <div class="card-header bg-light">
+                <h5 class="card-title mb-0"><i class="bi bi-info-circle me-2"></i>Informações do Item</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <p><strong>Código:</strong> {{ item.codigo }}</p>
+                        <p><strong>Material:</strong> {{ item.material }}</p>
+                        <p><strong>Unidade:</strong> {{ item.unidade }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Preço Unitário:</strong> R$ {{ '%0.2f'|format(item.preco_unitario) }}</p>
+                        <p><strong>Quantidade em Estoque:</strong> {{ '%0.2f'|format(item.quantidade_estoque) }}</p>
+                    </div>
+                </div>
+                
+                <form method="POST" class="needs-validation" novalidate>
+                    <div class="mb-3">
+                        <label for="quantidade_contada" class="form-label">Quantidade Contada</label>
+                        <input type="text" class="form-control" id="quantidade_contada" name="quantidade_contada" value="{{ '%0.2f'|format(item.quantidade_contada) }}" required>
+                        <div class="form-text">
+                            <i class="bi bi-info-circle me-1"></i>Use vírgula ou ponto como separador decimal (ex: 10,5 ou 10.5)
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <h5 class="alert-heading"><i class="bi bi-calculator me-2"></i>Valores Calculados:</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>Diferença:</strong> 
+                                    <span class="{{ 'text-danger' if item.diferenca_quantidade < 0 else 'text-success' if item.diferenca_quantidade > 0 else '' }}">
+                                        {{ '%0.2f'|format(item.diferenca_quantidade) }}
+                                    </span>
+                                </p>
+                                <p><strong>IV-:</strong> {{ '%0.2f'|format(item.iv_negativo) }}</p>
+                                <p><strong>IV+:</strong> {{ '%0.2f'|format(item.iv_positivo) }}</p>
+                                <p><strong>Valor Absoluto:</strong> {{ '%0.2f'|format(item.valor_absoluto_quantidade) }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>Valor do Estoque:</strong> R$ {{ '%0.2f'|format(item.valor_estoque) }}</p>
+                                <p><strong>Valor da Contagem:</strong> R$ {{ '%0.2f'|format(item.valor_contagem) }}</p>
+                                <p><strong>Diferença de Valor:</strong>
+                                    <span class="{{ 'text-danger' if item.diferenca_valor < 0 else 'text-success' if item.diferenca_valor > 0 else '' }}">
+                                        R$ {{ '%0.2f'|format(item.diferenca_valor) }}
+                                    </span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle me-1"></i>Salvar Alterações
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Validação de formulário
+    (function() {
+        'use strict';
+        var forms = document.querySelectorAll('.needs-validation');
+        Array.prototype.slice.call(forms).forEach(function(form) {
+            form.addEventListener('submit', function(event) {
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            }, false);
+        });
+    })();
+    
+    // Validação e formatação de entrada numérica
+    document.getElementById('quantidade_contada').addEventListener('input', function(e) {
+        let value = e.target.value;
+        
+        // Remover tudo, exceto números, vírgulas e pontos
+        value = value.replace(/[^\d,.]/g, '');
+        
+        // Certificar-se de que há apenas um separador decimal
+        let countDots = (value.match(/\./g) || []).length;
+        let countCommas = (value.match(/,/g) || []).length;
+        
+        if (countDots > 1 || countCommas > 1 || (countDots >= 1 && countCommas >= 1)) {
+            // Se houver mais de um separador, limpar os extras
+            let firstSeparatorIndex = Math.min(
+                value.indexOf('.') !== -1 ? value.indexOf('.') : Infinity,
+                value.indexOf(',') !== -1 ? value.indexOf(',') : Infinity
+            );
+            
+            if (firstSeparatorIndex !== Infinity) {
+                let beforeSeparator = value.substring(0, firstSeparatorIndex);
+                let separator = value.charAt(firstSeparatorIndex);
+                let afterSeparator = value.substring(firstSeparatorIndex + 1).replace(/[,.]/g, '');
+                value = beforeSeparator + separator + afterSeparator;
+            }
+        }
+        
+        e.target.value = value;
+    });
+</script>
+{% endblock %} 
