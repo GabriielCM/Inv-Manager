@@ -104,9 +104,10 @@ def view_inventario(id):
     total_iv_positivo = sum(item.iv_positivo for item in itens)
     total_val_absoluto = sum(item.valor_absoluto_quantidade for item in itens)
     
+    # Calcular totais monetários
     total_valor_estoque = sum(item.valor_estoque for item in itens)
     total_valor_contagem = sum(item.valor_contagem for item in itens)
-    total_valor_diferenca = total_valor_contagem - total_valor_estoque
+    total_valor_diferenca = sum(item.diferenca_valor for item in itens)  # Usar a diferença de cada item para maior precisão
     total_valor_iv_negativo = sum(item.iv_negativo_valor for item in itens)
     total_valor_iv_positivo = sum(item.iv_positivo_valor for item in itens)
     total_valor_absoluto = sum(item.valor_absoluto_valor for item in itens)
@@ -135,6 +136,14 @@ def edit_item(id, item_id):
     
     if request.method == 'POST':
         try:
+            # Validar código, se estiver sendo alterado
+            if 'codigo' in request.form:
+                codigo = request.form['codigo']
+                if not ItemInventario.validar_codigo(codigo):
+                    flash('Formato de código inválido. O código deve ter o formato de 3 letras seguidas por ponto e 5 números (ex: MPR.01234)', 'danger')
+                    return render_template('edit_item.html', inventario=inventario, item=item)
+                item.codigo = codigo
+            
             quantidade_contada = float(request.form['quantidade_contada'].replace(',', '.'))
             item.quantidade_contada = quantidade_contada
             inventario.ultima_atualizacao = datetime.now()
@@ -277,7 +286,7 @@ def export_inventario(id, format):
             
             total_valor_estoque = sum(item.valor_estoque for item in itens)
             total_valor_contagem = sum(item.valor_contagem for item in itens)
-            total_valor_diferenca = total_valor_contagem - total_valor_estoque
+            total_valor_diferenca = sum(item.diferenca_valor for item in itens)
             total_valor_iv_negativo = sum(item.iv_negativo_valor for item in itens)
             total_valor_iv_positivo = sum(item.iv_positivo_valor for item in itens)
             total_valor_absoluto = sum(item.valor_absoluto_valor for item in itens)
